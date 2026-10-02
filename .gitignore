@@ -2,3 +2,4 @@ __pycache__/
 data/
 *.sqlite3
 *.sqlite3-journal
+/迭代记录.md

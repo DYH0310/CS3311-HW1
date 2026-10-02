@@ -30,6 +30,6 @@ python -m unittest -v
 
 ## 作业记录
 
-[迭代记录](迭代记录.md) 保留了模拟学生实际提出的四轮提示词，以及每轮改动、验证方法和心得。一个 subagent 模拟学生，另一个 subagent 独立审查记录的中文表达。项目用四个 Git 提交保留每轮版本，可运行 `git log --reverse --oneline` 查看。
+迭代记录作为单独文档保留在本地，不随项目提交。项目最初的四个 Git 提交保留了每轮版本，可运行 `git log --reverse --oneline` 查看。
 
 程序只在窗口内显示预算提醒。实际账本数据不会提交到 GitHub；复制 `data/ledger.sqlite3` 可以备份自己的记录。
