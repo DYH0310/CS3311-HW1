@@ -58,7 +58,8 @@ class App:
         budget_bar = ttk.Frame(panel)
         budget_bar.pack(fill="x", pady=12)
         ttk.Label(budget_bar, text="每月预算（元）").pack(side="left")
-        self.budget_input = tk.StringVar()
+        saved_budget = ledger.budget()
+        self.budget_input = tk.StringVar(value=money(saved_budget) if saved_budget is not None else "")
         ttk.Entry(budget_bar, textvariable=self.budget_input, width=12).pack(side="left", padx=8)
         self.budget_button = ttk.Button(budget_bar, text="保存预算", command=self.save_budget)
         self.budget_button.pack(side="left")
@@ -110,7 +111,10 @@ class App:
         self.run_action(lambda: self.ledger.delete(int(selected[0])))
 
     def save_budget(self):
-        self.run_action(lambda: self.ledger.set_budget(self.budget_input.get()))
+        def action():
+            self.ledger.set_budget(self.budget_input.get())
+            self.budget_input.set(money(self.ledger.budget()))
+        self.run_action(action)
 
     def view_month(self):
         def action():
@@ -126,7 +130,6 @@ class App:
         total, categories = self.ledger.summary(month)
         self.summary_text.set(f"{month} 支出：{money(total)} 元\n" + "　".join(f"{name} {money(value)}" for name, value in categories.items()))
         budget = self.ledger.budget()
-        self.budget_input.set(money(budget) if budget is not None else "")
         if budget is None:
             self.reminder.set("尚未设置预算。")
         elif total >= budget:

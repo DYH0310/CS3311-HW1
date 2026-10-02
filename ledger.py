@@ -15,7 +15,7 @@ def parse_money(text):
         value = Decimal(text.strip())
     except InvalidOperation:
         raise ValueError("请输入金额，例如 12.50。") from None
-    if not value.is_finite() or value <= 0 or value > 99999999.99:
+    if not value.is_finite() or value <= 0 or value > Decimal("99999999.99"):
         raise ValueError("金额须大于 0，且不超过 99999999.99 元。")
     cents = value * 100
     if cents != cents.to_integral_value():

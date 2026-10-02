@@ -37,6 +37,9 @@ class LedgerTests(unittest.TestCase):
                 validate_date(day)
         self.assertEqual(validate_date("2024-02-29"), "2024-02-29")
         self.assertEqual(parse_money("0.01"), 1)
+        self.assertEqual(parse_money("99999999.99"), 9999999999)
+        with self.assertRaises(ValueError):
+            parse_money("100000000.00")
 
     def test_invalid_date_does_not_write(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -69,6 +72,21 @@ class LedgerTests(unittest.TestCase):
             for month in ("2026-9", "2026-00", "2026-13", "0000-01", ""):
                 with self.subTest(month=month), self.assertRaises(ValueError):
                     validate_month(month)
+            ledger.close()
+
+    def test_invalid_budget_preserves_saved_budget(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "ledger.sqlite3"
+            ledger = Ledger(path)
+            ledger.set_budget("1000")
+            for amount in ("", "-1", "abc", "1.234", "NaN"):
+                with self.assertRaises(ValueError):
+                    ledger.set_budget(amount)
+                self.assertEqual(ledger.budget(), 100000)
+            ledger.set_budget("2000")
+            ledger.close()
+            ledger = Ledger(path)
+            self.assertEqual(ledger.budget(), 200000)
             ledger.close()
 
 

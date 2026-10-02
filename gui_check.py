@@ -82,6 +82,39 @@ def main():
             assert len(app.table.get_children()) == 1
             assert app.viewed_month == "2026-10"
             assert "12.50" in app.summary_text.get()
+
+            app.budget_input.set("1000")
+            app.budget_button.invoke()
+            app.budget_input.set("2000")
+            app.day.set("2026-10-04")
+            app.amount.set("1000")
+            app.category.set("娱乐")
+            app.add_button.invoke()
+            assert app.budget_input.get() == "2000"
+            assert app.ledger.budget() == 100000
+            assert "已达到预算 1000.00" in app.reminder.get()
+            app.month_input.set("2026-09")
+            app.month_button.invoke()
+            assert app.budget_input.get() == "2000"
+            assert "980.00" in app.reminder.get()
+            app.month_input.set("2026-10")
+            app.month_button.invoke()
+            lunch = next(item for item in app.table.get_children() if app.table.item(item, "values")[2] == "餐饮")
+            app.table.selection_set(lunch)
+            app.delete_button.invoke()
+            assert app.budget_input.get() == "2000"
+            assert len(app.table.get_children()) == 1
+            assert "已达到预算 1000.00" in app.reminder.get()
+            app.budget_button.invoke()
+            assert app.budget_input.get() == "2000.00"
+            assert app.ledger.budget() == 200000
+            assert "预算还剩 1000.00" in app.reminder.get()
+            app.budget_input.set("-1")
+            app.budget_button.invoke()
+            assert app.budget_input.get() == "-1"
+            assert app.ledger.budget() == 200000
+            assert "预算还剩 1000.00" in app.reminder.get()
+            assert error.call_count == 5
         app.close()
         root = tk.Tk()
         app = App(root, Ledger(path))
@@ -89,9 +122,9 @@ def main():
         app.month_button.invoke()
         root.update()
         assert len(app.table.get_children()) == 1
-        assert app.budget_input.get() == "15.50"
+        assert app.budget_input.get() == "2000.00"
         app.close()
-    print("GUI check passed: monthly filter, empty/invalid month, add, budget, invalid date, cancel/confirm delete, reload.")
+    print("GUI check passed: month filters, invalid input, delete confirmation, unsaved budget, saved reminders, reload.")
 
 
 if __name__ == "__main__":
