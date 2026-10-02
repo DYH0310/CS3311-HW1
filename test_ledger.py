@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from ledger import Ledger, parse_money, validate_date
+from ledger import Ledger, parse_money, validate_date, validate_month
 
 
 class LedgerTests(unittest.TestCase):
@@ -47,6 +47,28 @@ class LedgerTests(unittest.TestCase):
                 self.assertEqual(ledger.records(), [])
             ledger.add(" 2026-02-09 ", "12.50", "餐饮")
             self.assertEqual(ledger.records()[0][1], "2026-02-09")
+            ledger.close()
+
+    def test_month_filter_and_empty_month(self):
+        with tempfile.TemporaryDirectory() as folder:
+            ledger = Ledger(Path(folder) / "ledger.sqlite3")
+            ledger.add("2026-09-30", "20", "学习")
+            lunch = ledger.add("2026-10-02", "12.50", "餐饮")
+            ledger.add("2026-10-03", "3", "交通")
+            self.assertEqual(len(ledger.records("2026-09")), 1)
+            self.assertEqual(ledger.summary("2026-09")[0], 2000)
+            self.assertEqual(len(ledger.records("2026-10")), 2)
+            self.assertEqual(ledger.summary("2026-10")[0], 1550)
+            self.assertEqual(ledger.records("2026-11"), [])
+            total, categories = ledger.summary("2026-11")
+            self.assertEqual(total, 0)
+            self.assertTrue(all(amount == 0 for amount in categories.values()))
+            ledger.delete(lunch)
+            self.assertEqual(len(ledger.records("2026-10")), 1)
+            self.assertEqual(ledger.summary("2026-10")[0], 300)
+            for month in ("2026-9", "2026-00", "2026-13", "0000-01", ""):
+                with self.subTest(month=month), self.assertRaises(ValueError):
+                    validate_month(month)
             ledger.close()
 
 

@@ -6,7 +6,7 @@ import sqlite3
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from ledger import CATEGORIES, DEFAULT_DB, Ledger, money
+from ledger import CATEGORIES, DEFAULT_DB, Ledger, money, validate_month
 
 
 class App:
@@ -45,6 +45,15 @@ class App:
         form.columnconfigure(3, weight=1)
         self.add_button = ttk.Button(form, text="添加记录", command=self.add)
         self.add_button.grid(row=1, column=4)
+
+        month_bar = ttk.Frame(panel)
+        month_bar.pack(fill="x", pady=(12, 0))
+        ttk.Label(month_bar, text="查看月份 YYYY-MM").pack(side="left")
+        self.viewed_month = date.today().strftime("%Y-%m")
+        self.month_input = tk.StringVar(value=self.viewed_month)
+        ttk.Entry(month_bar, textvariable=self.month_input, width=12).pack(side="left", padx=8)
+        self.month_button = ttk.Button(month_bar, text="查看", command=self.view_month)
+        self.month_button.pack(side="left")
 
         budget_bar = ttk.Frame(panel)
         budget_bar.pack(fill="x", pady=12)
@@ -103,21 +112,27 @@ class App:
     def save_budget(self):
         self.run_action(lambda: self.ledger.set_budget(self.budget_input.get()))
 
+    def view_month(self):
+        def action():
+            self.viewed_month = validate_month(self.month_input.get())
+            self.month_input.set(self.viewed_month)
+        self.run_action(action)
+
     def refresh(self):
         self.table.delete(*self.table.get_children())
-        for record_id, day, cents, category, note in self.ledger.records():
+        for record_id, day, cents, category, note in self.ledger.records(self.viewed_month):
             self.table.insert("", "end", iid=str(record_id), values=(day, money(cents), category, note))
-        month = date.today().strftime("%Y-%m")
+        month = self.viewed_month
         total, categories = self.ledger.summary(month)
-        self.summary_text.set(f"{month} 本月支出：{money(total)} 元\n" + "　".join(f"{name} {money(value)}" for name, value in categories.items()))
+        self.summary_text.set(f"{month} 支出：{money(total)} 元\n" + "　".join(f"{name} {money(value)}" for name, value in categories.items()))
         budget = self.ledger.budget()
         self.budget_input.set(money(budget) if budget is not None else "")
         if budget is None:
             self.reminder.set("尚未设置预算。")
         elif total >= budget:
-            self.reminder.set(f"预算提醒：本月支出已达到预算 {money(budget)} 元。")
+            self.reminder.set(f"预算提醒：所选月份支出已达到预算 {money(budget)} 元。")
         else:
-            self.reminder.set(f"本月预算还剩 {money(budget - total)} 元。")
+            self.reminder.set(f"所选月份预算还剩 {money(budget - total)} 元。")
         self.reminder_label.configure(foreground="#b42318" if budget is not None and total >= budget else "#205d46")
 
     def close(self):

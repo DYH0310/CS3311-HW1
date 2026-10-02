@@ -37,6 +37,13 @@ def money(cents):
     return f"{cents // 100}.{cents % 100:02d}"
 
 
+def validate_month(text):
+    text = text.strip()
+    if not re.fullmatch(r"[0-9]{4}-(0[1-9]|1[0-2])", text) or text.startswith("0000-"):
+        raise ValueError("查看月份须为 YYYY-MM，例如 2026-10，月份为 01 到 12。")
+    return text
+
+
 class Ledger:
     def __init__(self, path=DEFAULT_DB):
         path = Path(path)
@@ -72,12 +79,19 @@ class Ledger:
         with self.db:
             self.db.execute("DELETE FROM expenses WHERE id = ?", (record_id,))
 
-    def records(self):
+    def records(self, month=None):
+        if month is not None:
+            month = validate_month(month)
+            return self.db.execute(
+                "SELECT id, day, cents, category, note FROM expenses WHERE substr(day, 1, 7) = ? ORDER BY day DESC, id DESC",
+                (month,),
+            ).fetchall()
         return self.db.execute(
             "SELECT id, day, cents, category, note FROM expenses ORDER BY day DESC, id DESC"
         ).fetchall()
 
     def summary(self, month):
+        month = validate_month(month)
         rows = self.db.execute(
             "SELECT category, SUM(cents) FROM expenses WHERE substr(day, 1, 7) = ? GROUP BY category",
             (month,),
