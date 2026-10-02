@@ -16,7 +16,7 @@ def main():
         root = tk.Tk()
         app = App(root, Ledger(path))
         root.update()
-        with patch("app.messagebox.showerror") as error, patch("app.messagebox.showinfo") as info:
+        with patch("app.messagebox.showerror") as error, patch("app.messagebox.showinfo") as info, patch("app.messagebox.askyesno", return_value=False) as confirm:
             today = date.today()
             for day, amount, category in [
                 (today.isoformat(), "12.50", "餐饮"),
@@ -38,9 +38,26 @@ def main():
             assert error.call_count == 1
             assert len(app.table.get_children()) == 3
             assert app.amount.get() == "-1"
+            app.day.set("2026-2-9")
+            app.amount.set("12.50")
+            app.note.set("保留输入")
+            app.add_button.invoke()
+            assert error.call_count == 2
+            assert len(app.table.get_children()) == 3
+            assert app.day.get() == "2026-2-9"
+            assert app.amount.get() == "12.50"
+            assert app.note.get() == "保留输入"
             app.delete_button.invoke()
             assert info.call_count == 1
             app.table.selection_set(app.table.get_children()[0])
+            summary_before = app.summary_text.get()
+            app.delete_button.invoke()
+            assert len(app.table.get_children()) == 3
+            assert app.summary_text.get() == summary_before
+            dialog_text = confirm.call_args.args[1]
+            assert today.isoformat() in dialog_text
+            assert "3.00" in dialog_text and "交通" in dialog_text
+            confirm.return_value = True
             app.delete_button.invoke()
             assert len(app.table.get_children()) == 2
         app.close()
@@ -50,7 +67,7 @@ def main():
         assert len(app.table.get_children()) == 2
         assert app.budget_input.get() == "15.50"
         app.close()
-    print("GUI check passed: add, monthly total, budget, invalid input, delete, reload.")
+    print("GUI check passed: add, monthly total, budget, invalid date, cancel/confirm delete, reload.")
 
 
 if __name__ == "__main__":

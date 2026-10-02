@@ -1,9 +1,10 @@
 """校园消费记账：金额以分保存，SQLite 负责本地持久化。"""
 
-from datetime import date, datetime
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 import sqlite3
+import re
 
 CATEGORIES = ("餐饮", "交通", "学习", "购物", "娱乐", "其他")
 DEFAULT_DB = Path(__file__).resolve().parent / "data" / "ledger.sqlite3"
@@ -23,8 +24,11 @@ def parse_money(text):
 
 
 def validate_date(text):
+    text = text.strip()
+    if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", text):
+        raise ValueError("日期格式须为 YYYY-MM-DD，月份和日期须写满两位。")
     try:
-        return datetime.strptime(text.strip(), "%Y-%m-%d").date().isoformat()
+        return datetime.strptime(text, "%Y-%m-%d").date().isoformat()
     except ValueError:
         raise ValueError("请输入有效日期，格式为 YYYY-MM-DD。") from None
 

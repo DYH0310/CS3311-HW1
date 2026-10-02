@@ -32,11 +32,22 @@ class LedgerTests(unittest.TestCase):
         for amount in ("", "-1", "0", "abc", "NaN", "Infinity", "1.234"):
             with self.subTest(amount=amount), self.assertRaises(ValueError):
                 parse_money(amount)
-        for day in ("", "2026-02-29", "2026-13-01", "2026-04-31"):
+        for day in ("", "2026-2-9", "2026-02-29", "2026-13-01", "2026-04-31"):
             with self.subTest(day=day), self.assertRaises(ValueError):
                 validate_date(day)
         self.assertEqual(validate_date("2024-02-29"), "2024-02-29")
         self.assertEqual(parse_money("0.01"), 1)
+
+    def test_invalid_date_does_not_write(self):
+        with tempfile.TemporaryDirectory() as folder:
+            ledger = Ledger(Path(folder) / "ledger.sqlite3")
+            for day in ("2026-2-9", "2026-02-29"):
+                with self.assertRaises(ValueError):
+                    ledger.add(day, "12.50", "餐饮", "保留输入")
+                self.assertEqual(ledger.records(), [])
+            ledger.add(" 2026-02-09 ", "12.50", "餐饮")
+            self.assertEqual(ledger.records()[0][1], "2026-02-09")
+            ledger.close()
 
 
 if __name__ == "__main__":

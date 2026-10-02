@@ -93,6 +93,11 @@ class App:
         if not selected:
             messagebox.showinfo("请选择记录", "请先在列表中选中要删除的记录。", parent=self.root)
             return
+        day, amount, category, _ = self.table.item(selected[0], "values")
+        if not messagebox.askyesno(
+            "确认删除", f"删除这笔消费吗？\n日期：{day}\n金额：{amount} 元\n类别：{category}", parent=self.root
+        ):
+            return
         self.run_action(lambda: self.ledger.delete(int(selected[0])))
 
     def save_budget(self):
